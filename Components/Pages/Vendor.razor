@@ -1,0 +1,242 @@
+@page "/vendor"
+@using Siloam.Data
+@inject Services.IVendorService VendorService
+@inject Services.IUnitService UnitService 
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<div>
+    <label>Select Unit:</label>
+<select value="@_selectedUnitId" @onchange="FilterVendor">
+        <option value="">-- All Units --</option>
+        @foreach (var unit in _units)
+        {
+            <option value="@unit.Id">@unit.Name</option>
+        }
+    </select>
+</div>
+
+<br/>
+
+<div style="display: flex; justify-content: space-between;">
+    <h3 style="margin: 0;">List Vendor</h3>
+    <button class="btn btn-success" @onclick="ToggleAddForm">New Vendor</button>
+</div>
+<br/>
+
+@if (_showAddForm)
+{
+    <div class="add-vendor-form">
+        <h4>Add New Vendor</h4>
+        <div class="form-group">
+            <label>Name:</label>
+            <input type="text" class="form-control" @bind="_newVendor.Name">
+        </div>
+        <br/>
+        <div class="form-group">
+            <label>Address:</label>
+            <input type="text" class="form-control" @bind="_newVendor.Address">
+        </div>
+        <br/>
+        <div class="form-group">
+            <label>Unit:</label>
+            <input type="text" class="form-control" @bind="_newUnitName">
+        </div>
+        <br/>
+        <button class="btn btn-primary" @onclick="SaveVendor">Save</button>
+    </div>
+    <br/>
+}
+
+<table class="table">
+    <thead>
+    <tr>
+        <th>Id</th>
+        <th>Name</th>
+        <th>Address</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var vendor in _vendors)
+    {
+        <tr>
+            <td>@vendor.Id</td>
+            <td>@vendor.Name</td>
+            <td>@vendor.Address</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<div class="pagination">
+    <div class="pagination-size">
+        <label>Items per page:</label>
+                <select value="@PageSize" @onchange="PageSizeChanged">
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                </select>
+    </div>
+    <div class="pagination-size">
+        <span>Page @CurrentPage of @TotalPages</span>
+    </div>
+    <li @onclick="PrevPage">
+        <button class="page-link">Previous</button>
+    </li>
+    <li @onclick="NextPage">
+        <button class="page-link">Next</button>
+    </li>
+</div>
+    
+
+
+<style>
+    .add-vendor-form {
+        background-color: #f2f2f2;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .pagination-size {
+        margin-top: 5px;
+        margin-right: 20px;
+    }
+    
+    .pagination {
+        float: right;
+        margin-top: 10px;
+    }
+    
+    .pagination button {
+        margin-left: 5px;
+    }
+</style>
+
+@code {
+    private List<Data.Vendor> _vendors = [];
+    private List<Unit> _units = [];
+    private Data.Vendor _newVendor = new();
+    private bool _showAddForm; 
+    private string _newUnitName = "";
+    private string _selectedUnitId = "";
+    
+    //paging
+    private int PageSize = 10;
+    private int CurrentPage = 1;
+    private int TotalItemsCount;
+    private int TotalPages => (int)Math.Ceiling((double)TotalItemsCount / PageSize);
+    
+    private void LoadData()
+    {
+        _vendors = VendorService.GetVendors(CurrentPage, PageSize);
+        TotalItemsCount = VendorService.GetTotalVendorCount();
+    }
+    
+    private void PageSizeChanged(ChangeEventArgs e)
+    {
+        PageSize = int.Parse(e.Value.ToString());
+        CurrentPage = 1;
+        if (!string.IsNullOrWhiteSpace(_selectedUnitId))
+        {
+            LoadDataFilterByUnit(Guid.Parse(_selectedUnitId));
+        }
+        else
+        {
+            LoadData();   
+        }
+    }
+    
+    private void LoadDataFilterByUnit(Guid unitId)
+    {
+        _vendors = VendorService.GetVendorsByUnitId(unitId, CurrentPage, PageSize);
+        TotalItemsCount = VendorService.GetTotalVendorCountByUnitId(unitId);
+    }
+    
+    private void PrevPage()
+    {
+        if (CurrentPage > 1)
+        {
+            CurrentPage--;
+            if (!string.IsNullOrWhiteSpace(_selectedUnitId))
+            {
+                LoadDataFilterByUnit(Guid.Parse(_selectedUnitId));
+            }
+            else
+            {
+                LoadData();   
+            }
+        }
+    }
+    
+    private void NextPage()
+    {
+        if (CurrentPage < TotalPages)
+        {
+            CurrentPage++;
+            if (!string.IsNullOrWhiteSpace(_selectedUnitId))
+            {
+                LoadDataFilterByUnit(Guid.Parse(_selectedUnitId));
+            }
+            else
+            {
+                LoadData();   
+            }
+        }
+    }
+    
+    protected override void OnInitialized()
+    {
+        _units = UnitService.GetUnits();
+        LoadData();
+    }
+    
+    private void FilterVendor(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var unitId))
+        {
+            _selectedUnitId = e.Value?.ToString();
+            LoadDataFilterByUnit(unitId);
+        }
+        else
+        {
+            _selectedUnitId = e.Value?.ToString();
+            LoadData();
+        }
+    }
+    
+    private void SaveVendor()
+    {
+        if (string.IsNullOrWhiteSpace(_newUnitName)) return;
+
+        var newVendor = new Data.Vendor
+        {
+            Name = _newVendor.Name,
+            Address = _newVendor.Address,
+            UnitId = UnitService.AddUnit(_newUnitName).Id
+        };
+        
+        VendorService.AddVendor(newVendor);
+        
+        LoadData();
+        ResetUnitListDropdown();
+        ResetAddVendorForm();
+    }
+    
+    private void ToggleAddForm()
+    {
+        _showAddForm = !_showAddForm;
+    }
+
+    private void ResetUnitListDropdown()
+    {
+        _selectedUnitId = "";
+        _units = UnitService.GetUnits();
+    }
+    
+    private void ResetAddVendorForm()
+    {
+        _newVendor = new Data.Vendor();
+        _newUnitName = "";
+        _showAddForm = false; 
+    }
+}

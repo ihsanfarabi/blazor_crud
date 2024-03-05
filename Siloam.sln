@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Siloam", "Siloam.csproj", "{30178B66-ED23-4EC8-A49F-A12C2E476E90}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{30178B66-ED23-4EC8-A49F-A12C2E476E90}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{30178B66-ED23-4EC8-A49F-A12C2E476E90}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30178B66-ED23-4EC8-A49F-A12C2E476E90}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{30178B66-ED23-4EC8-A49F-A12C2E476E90}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
